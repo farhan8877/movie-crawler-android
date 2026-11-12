@@ -45,18 +45,39 @@ jobs:
       - name: Extract Android project
         run: |
           unzip -q movie_crawler_android_source.zip -d extracted
+
           PROJECT_DIR=$(find extracted -name buildozer.spec -printf '%h\n' | head -n 1)
+
           if [ -z "$PROJECT_DIR" ]; then
             echo "ERROR: buildozer.spec not found"
             exit 1
           fi
+
           echo "PROJECT_DIR=$PROJECT_DIR" >> $GITHUB_ENV
           echo "Project found: $PROJECT_DIR"
+
+      - name: Fix Android API compatibility
+        run: |
+          cd "$PROJECT_DIR"
+
+          sed -i -E \
+            's/^[[:space:]]*android\.minapi[[:space:]]*=.*/android.minapi = 24/' \
+            buildozer.spec
+
+          echo "Checking Android configuration:"
+          grep -E '^android\.(minapi|api)' buildozer.spec
+
+          if ! grep -q '^android.minapi = 24$' buildozer.spec; then
+            echo "ERROR: Minimum API update failed"
+            exit 1
+          fi
 
       - name: Build Android APK
         run: |
           cd "$PROJECT_DIR"
+
           export BUILDOZER_ALLOW_ORG_TEST_DOMAIN=1
+
           yes | buildozer -v android debug
 
       - name: Upload APK
