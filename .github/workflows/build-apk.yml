@@ -1,1 +1,32 @@
+name: Build Movie Crawler APK
+on:
+  workflow_dispatch:
+  push:
+    paths:
+      - 'main.py'
+      - 'buildozer.spec'
+      - '.github/workflows/build-apk.yml'
 
+permissions:
+  contents: read
+
+jobs:
+  build-android:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout project
+        uses: actions/checkout@v4
+
+      - name: Build APK with Buildozer
+        uses: ArtemSBulgakov/buildozer-action@v1
+        id: buildozer
+        with:
+          workdir: .
+          buildozer_version: stable
+
+      - name: Upload APK
+        uses: actions/upload-artifact@v4
+        with:
+          name: movie-crawler-apk
+          path: ${{ steps.buildozer.outputs.filename }}
+          if-no-files-found: error
